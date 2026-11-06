@@ -1,16 +1,10 @@
 # nvim-treesitter-elisp
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Neovim](https://img.shields.io/badge/Neovim-0.9+-blueviolet.svg)](https://neovim.io)
-
-Add Tree-sitter support for Emacs Lisp (elisp) to Neovim.
+Add Tree-sitter support for Emacs Lisp to Neovim.
 
 ## Why this plugin?
 
-nvim-treesitter doesn't include an elisp parser. This plugin:
-- Compiles [tree-sitter-elisp](https://github.com/Wilfred/tree-sitter-elisp) from source
-- Provides syntax highlighting, indentation, folding, and local variable tracking
-- Works with Neovim 0.9+
+nvim-treesitter doesn't include an elisp parser. This plugin registers [tree-sitter-elisp](https://github.com/Wilfred/tree-sitter-elisp) (84⭐, used by Emacs 29+ and Difftastic) with nvim-treesitter.
 
 ## Installation
 
@@ -20,9 +14,6 @@ nvim-treesitter doesn't include an elisp parser. This plugin:
 {
   "fork-svg/nvim-treesitter-elisp",
   dependencies = { "nvim-treesitter/nvim-treesitter" },
-  config = function()
-    require("treesitter-elisp").setup()
-  end,
 }
 ```
 
@@ -32,9 +23,6 @@ nvim-treesitter doesn't include an elisp parser. This plugin:
 use {
   "fork-svg/nvim-treesitter-elisp",
   requires = { "nvim-treesitter/nvim-treesitter" },
-  config = function()
-    require("treesitter-elisp").setup()
-  end,
 }
 ```
 
@@ -45,60 +33,45 @@ Plug 'nvim-treesitter/nvim-treesitter'
 Plug 'fork-svg/nvim-treesitter-elisp'
 ```
 
-Then add to your init.lua:
-
-```lua
-require("treesitter-elisp").setup()
-```
-
-## Install the Parser
+## Usage
 
 After installing the plugin, run:
 
 ```vim
-:TSElispInstall
+:TSInstall elisp
 ```
 
-This will:
-1. Clone the tree-sitter-elisp grammar
-2. Compile the parser to `~/.local/share/nvim/treesitter/elisp.so`
-3. Register it with Neovim
+That's it! The plugin uses nvim-treesitter's native parser registration mechanism.
 
-## Commands
+## How it Works
 
-| Command | Description |
-|---------|-------------|
-| `:TSElispInstall` | Install/compile the elisp parser |
-| `:TSElispUninstall` | Remove the elisp parser |
+The plugin uses `vim.api.nvim_create_autocmd('User', { pattern = 'TSUpdate', ... })` to register the elisp parser with nvim-treesitter. This is the official way to add custom parsers.
 
-## Configuration
+When you run `:TSInstall elisp`, nvim-treesitter:
+1. Clones the tree-sitter-elisp grammar from GitHub
+2. Compiles `src/parser.c` to `elisp.so`
+3. Loads it when you open `.el` files
+
+The plugin provides:
+- **Syntax highlighting** via `queries/elisp/highlights.scm`
+- **Indentation** via `queries/elisp/indents.scm`
+- **Code folding** via `queries/elisp/folds.scm`
+- **Local variable tracking** via `queries/elisp/locals.scm`
+
+## Manual Setup
+
+If you prefer to configure manually:
 
 ```lua
-require("treesitter-elisp").setup({
-  -- Custom grammar URL (optional)
-  url = "https://github.com/Wilfred/tree-sitter-elisp",
-
-  -- Pin to specific commit (optional)
-  revision = nil,
-
-  -- Auto-install when opening elisp file (optional)
-  auto_install = false,
-})
+require('treesitter-elisp').setup()  -- Called automatically on plugin load
 ```
 
 ## Requirements
 
 - Neovim 0.9+
+- [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
 - `gcc` or `cc` compiler
 - `git`
-- [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
-
-## How it Works
-
-1. Plugin registers `elisp` filetype with tree-sitter
-2. `:TSElispInstall` compiles `src/parser.c` to `elisp.so`
-3. Neovim loads the parser when opening `.el` files
-4. Query files provide highlighting, indentation, folding
 
 ## License
 

@@ -1,0 +1,89 @@
+name: Build Parser
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            ext: so
+          - os: macos-latest
+            target: macos-x64
+            ext: so
+          - os: macos-latest
+            target: macos-arm64
+            ext: so
+          - os: windows-latest
+            target: windows-x64
+            ext: dll
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone tree-sitter-elisp
+        run: |
+          git clone --depth 1 https://github.com/Wilfred/tree-sitter-elisp.git grammar
+
+      - name: Build parser (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          if [ "${{ matrix.target }}" = "macos-arm64" ]; then
+            ARCH_FLAGS="-arch arm64"
+          else
+            ARCH_FLAGS=""
+          fi
+          gcc -shared -fPIC -O2 $ARCH_FLAGS \
+            -Igrammar/src \
+            grammar/src/parser.c \
+            -o elisp.${{ matrix.ext }}
+
+      - name: Build parser (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          gcc -shared -fPIC -O2 -Igrammar/src grammar/src/parser.c -o elisp.dll
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: elisp-${{ matrix.target }}
+          path: elisp.${{ matrix.ext }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package releases
+        run: |
+          cd artifacts
+          for dir in */; do
+            target=${dir%/}
+            cd "$dir"
+            tar czf "../../elisp-${target}.tar.gz" *
+            cd ..
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: elisp-*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

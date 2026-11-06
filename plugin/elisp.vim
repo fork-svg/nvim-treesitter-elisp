@@ -14,12 +14,5 @@ if !has('nvim-0.9.0')
   finish
 endif
 
-command! -nargs=0 TSElisppInstall lua require('treesitter-elisp').install()
-command! -nargs=0 TSElispUninstall lua require('treesitter-elisp').uninstall()
-
-augroup TreesitterElisp
-  autocmd!
-  autocmd FileType elisp,emacs,lisp lua require('treesitter-elisp').setup()
-augroup END
-
+" Auto-setup on plugin load
 lua require('treesitter-elisp').setup()
